@@ -1,6 +1,13 @@
+/**
+ *  Source: https://github.com/ajlopez/DeFiProt/blob/master/contracts/Market.sol
+ * 
+ */
+ 
+// SPDX-License-Identifier: MIT
+ 
 pragma solidity ^0.8.0;
 
-import "../token/ERC20/ERC20.sol";
+import "../token/ERC20/IERC20.sol";
 import "./Controller.sol";
 import "../utils/math/SafeMath.sol";
 
@@ -9,19 +16,18 @@ contract Market is IMarket {
 
     address public owner;
 
-    ERC20 public token;
-    
+    IERC20 public token;
     Controller public controller;
 
     uint public totalSupply;
-
     uint public supplyIndex;
 
     uint public accrualBlockNumber;
 
+    uint public totalBorrow;
     uint public borrowIndex;
-    uint public totalBorrows;
     uint public baseBorrowRate;
+    
     uint public utilizationRateFraction;
     
     uint public blocksPerYear;
@@ -47,8 +53,8 @@ contract Market is IMarket {
     event PayBorrow(address user, uint amount);
     event LiquidateBorrow(address borrower, uint amount, address liquidator, address collateralMarket, uint collateralAmount);
 
-    constructor(ERC20 _token, uint _baseBorrowAnnualRate, uint _blocksPerYear, uint _utilizationRateFraction) public {
-        require(ERC20(_token).totalSupply() >= 0);
+    constructor(IERC20 _token, uint _baseBorrowAnnualRate, uint _blocksPerYear, uint _utilizationRateFraction) {
+        require(IERC20(_token).totalSupply() >= 0);
         owner = msg.sender;
         token = _token;
         borrowIndex = FACTOR;
@@ -72,8 +78,12 @@ contract Market is IMarket {
     function getToken() external override view returns (address) {
         return address(token);
     }
+    
+    function setController(Controller _controller) public onlyOwner {
+        controller = _controller;
+    }
 
-    function getCash() public view returns (uint) {
+    function balance() public view returns (uint) {
         return token.balanceOf(address(this));
     }
 
@@ -97,11 +107,11 @@ contract Market is IMarket {
     }
 
     function borrowRatePerBlock() public view returns (uint) {
-        return getBorrowRate(getCash(), totalBorrows, 0);
+        return getBorrowRate(balance(), totalBorrow, 0);
     }
 
     function supplyRatePerBlock() public view returns (uint) {
-        return getSupplyRate(getCash(), totalBorrows, 0);
+        return getSupplyRate(balance(), totalBorrow, 0);
     }
 
     function supplyOf(address user) public override view returns (uint) {
@@ -138,10 +148,6 @@ contract Market is IMarket {
         (newTotalSupply, newSupplyIndex) = calculateSupplyDataAtBlock(block.number);
 
         return snapshot.supply.mul(newSupplyIndex).div(snapshot.interestIndex);
-    }
-
-    function setController(Controller _controller) public onlyOwner {
-        controller = _controller;
     }
 
     function supply(uint amount) public {
@@ -218,7 +224,7 @@ contract Market is IMarket {
         borrowSnapshot.principal = borrowSnapshot.principal.add(amount);
         borrowSnapshot.interestIndex = borrowIndex;
 
-        totalBorrows = totalBorrows.add(amount);
+        totalBorrow = totalBorrow.add(amount);
         
         emit Borrow(msg.sender, amount);
     }
@@ -226,7 +232,7 @@ contract Market is IMarket {
     function accrueInterest() public override {
         uint currentBlockNumber = block.number;
 
-        (totalBorrows, borrowIndex) = calculateBorrowDataAtBlock(currentBlockNumber);
+        (totalBorrow, borrowIndex) = calculateBorrowDataAtBlock(currentBlockNumber);
         (totalSupply, supplyIndex) = calculateSupplyDataAtBlock(currentBlockNumber);
 
         accrualBlockNumber = currentBlockNumber;
@@ -234,18 +240,18 @@ contract Market is IMarket {
 
     function calculateBorrowDataAtBlock(uint newBlockNumber) internal view returns (uint newTotalBorrows, uint newBorrowIndex) {
         if (newBlockNumber <= accrualBlockNumber)
-            return (totalBorrows, borrowIndex);
+            return (totalBorrow, borrowIndex);
 
-        if (totalBorrows == 0)
-            return (totalBorrows, borrowIndex);
+        if (totalBorrow == 0)
+            return (totalBorrow, borrowIndex);
 
         uint blockDelta = newBlockNumber - accrualBlockNumber;
 
         uint simpleInterestFactor = borrowRatePerBlock().mul(blockDelta);
-        uint interestAccumulated = simpleInterestFactor.mul(totalBorrows).div(FACTOR);
+        uint interestAccumulated = simpleInterestFactor.mul(totalBorrow).div(FACTOR);
 
         newBorrowIndex = simpleInterestFactor.mul(borrowIndex).div(FACTOR).add(borrowIndex);
-        newTotalBorrows = interestAccumulated.add(totalBorrows);
+        newTotalBorrows = interestAccumulated.add(totalBorrow);
     }
 
     function calculateSupplyDataAtBlock(uint newBlockNumber) internal view returns (uint newTotalSupply, uint newSupplyIndex) {
@@ -316,7 +322,7 @@ contract Market is IMarket {
         require(token.transferFrom(payer, address(this), amount), "No enough tokens");
 
         snapshot.principal = snapshot.principal.sub(amount);
-        totalBorrows = totalBorrows.sub(amount);
+        totalBorrow = totalBorrow.sub(amount);
 
         if (additional > 0)
             supplyInternal(payer, additional);

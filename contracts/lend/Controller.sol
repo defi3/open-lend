@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.0;
 
 import "./IMarket.sol";
@@ -18,7 +20,7 @@ contract Controller {
     uint public liquidationFactor;
     uint public constant MANTISSA = 1e6;
 
-    constructor() public {
+    constructor() {
         owner = msg.sender;
     }
 
