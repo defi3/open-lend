@@ -45,7 +45,7 @@ contract Market is IMarket {
     mapping (address => SupplySnapshot) supplies;
     mapping (address => BorrowSnapshot) borrows;
 
-    uint public constant FACTOR = 1e18;
+    uint public constant FACTOR = 1e6;
 
     event Supply(address user, uint amount);
     event Redeem(address user, uint amount);
@@ -229,13 +229,19 @@ contract Market is IMarket {
         emit Borrow(msg.sender, amount);
     }
 
+    function getCurrentBlockNumber() public view returns (uint) {
+        return block.number;
+    }
+
     function accrueInterest() public override {
         uint currentBlockNumber = block.number;
+        
+        if (currentBlockNumber > accrualBlockNumber) {
+            (totalBorrow, borrowIndex) = calculateBorrowDataAtBlock(currentBlockNumber);
+            (totalSupply, supplyIndex) = calculateSupplyDataAtBlock(currentBlockNumber);
 
-        (totalBorrow, borrowIndex) = calculateBorrowDataAtBlock(currentBlockNumber);
-        (totalSupply, supplyIndex) = calculateSupplyDataAtBlock(currentBlockNumber);
-
-        accrualBlockNumber = currentBlockNumber;
+            accrualBlockNumber = currentBlockNumber;
+        }
     }
 
     function calculateBorrowDataAtBlock(uint newBlockNumber) internal view returns (uint newTotalBorrows, uint newBorrowIndex) {
