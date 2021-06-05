@@ -12,13 +12,15 @@ OpenZeppelin + Compound + AI + CeFi
 
 (5) Integraion with Price Feed (2021-06)
 
-(6) Integration with Goverance from OpenZeppelin (2021-07)
+(6) Integration with Liquidation from Compound (2021-07)
 
-(7) Integration with Goverance from Compound (2021-07)
+(7) Integration with Goverance from OpenZeppelin (2021-07)
 
-(8) Integration with AI (2021-08 to 2021-12)
+(8) Integration with Goverance from Compound (2021-08)
 
-(9) Integration with CeFI (2022-01)
+(9) Integration with AI (2021-09 to 2021-12)
+
+(10) Integration with CeFI (2022-01)
 
 ### Reference
 (1) [openzeppelin-contracts] (https://github.com/OpenZeppelin/openzeppelin-contracts)
