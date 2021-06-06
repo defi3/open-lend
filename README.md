@@ -4,11 +4,11 @@ OpenZeppelin + Compound + AI + CeFi
 ### Roadmap
 (1) Integration with ERC20 token from OpenZeppelin (2021-05, 2021-06)
 
-(2) Integration with Market and Controller from DeFiProt (2021-05, 2021-06)
+(2) Integration with Market, Controller and Liquidation from DeFiProt (2021-05, 2021-06)
 
-(3) Interation with Interest Model from Compound (2021-06)
+(3) Integration with Interest Model from Compound (2021-06)
 
-(4) Interation with CompController from Compound (2021-06)
+(4) Integration with CompController from Compound (2021-06)
 
 (5) Integraion with Price Feed (2021-06)
 
@@ -30,3 +30,5 @@ OpenZeppelin + Compound + AI + CeFi
 (3) [DeFiProt](https://github.com/ajlopez/DeFiProt)
 
 (4) [When DeFi Becomes Intelligent](https://www.coindesk.com/when-defi-becomes-intelligent)
+
+(5) [HOW DOES DEFI LENDING WORK?](https://www.leewayhertz.com/how-defi-lending-works/)
