@@ -1,14 +1,25 @@
-// SPDX-License-Identifier: MIT
-
+/**
+ *  SPDX-License-Identifier: MIT
+ * 
+ *  Reference: https://github.com/ajlopez/DeFiProt/blob/master/contracts/MarketInterface.sol
+ * 
+ *  @Authoer defi3
+ * 
+ *  Support ERC20, ERC721
+ * 
+ * 
+ *  Creation, 2021-05
+ * 
+ *  Main Update 1, 2021-06-06, add owner(), totalSupply(), totalBorrow()
+ * 
+ *  Main Update 2, 2021-06-17, migrate to ^0.8.0
+ * 
+ */
 pragma solidity ^0.8.0;
 
 interface IMarket {
-    function getToken() external view returns (address);
-    function supplyOf(address account) external view returns (uint);
-    function borrowBy(address account) external view returns (uint);
-    function updatedSupplyOf(address account) external view returns (uint);
-    function updatedBorrowBy(address account) external view returns (uint);
-    function accrueInterest() external;
-    function transferTo(address sender, address receiver, uint amount) external;
+    function token() external view returns (address);
+    function totalSupply() external view returns (uint);
+    function totalBorrow() external view returns (uint);
+    function balance() external view returns (uint);
 }
-

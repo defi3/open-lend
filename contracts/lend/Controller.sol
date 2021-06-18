@@ -1,135 +1,110 @@
-// SPDX-License-Identifier: MIT
-
+/**
+ *  SPDX-License-Identifier: MIT
+ * 
+ *  Reference: https://github.com/ajlopez/DeFiProt/blob/master/contracts/Controller.sol
+ * 
+ *  @Authoer defi3
+ * 
+ * 
+ *  Creation, 2021-05
+ * 
+ *  Main Update 1, 2021-06-06, change it to abstract contract
+ * 
+ *  Main Update 2, 2021-06-06, add owner(), marketOf(), priceOf()
+ * 
+ *  Main Update 3, 2021-06-06, improve naming convention
+ * 
+ *  Main Update 4, 2021-06-12, use Ownable
+ * 
+ *  Main Update 5, 2021-06-12, add Controller for inheritance
+ * 
+ *  Main Update 6, 2021-06-12, use AddressArray, remove _markets and rename _marketList to _markets
+ * 
+ *  Main Update 7, 2021-06-17, migrate to ^0.8.0
+ * 
+ */
 pragma solidity ^0.8.0;
 
+import "./IController.sol";
 import "./IMarket.sol";
-import "../utils/math/SafeMath.sol";
+import "../utils/Ownable.sol";
+import "../utils/AddressArray.sol";
 
-contract Controller {
-    using SafeMath for uint256;
+abstract contract Controller is IController, Ownable {
+    using AddressArray for address[];
+    
+    // uint public constant MANTISSA = 1e6;
+    
+    uint internal _collateralFactor;
+    uint internal _liquidationFactor;
 
-    address public owner;
+    mapping (address => address) internal _tokenToMarket;
+    address[] internal _markets;
 
-    mapping (address => bool) public markets;
-    mapping (address => address) public marketsByToken;
-    mapping (address => uint) public prices;
 
-    address[] public marketList;
-
-    uint public collateralFactor;
-    uint public liquidationFactor;
-    uint public constant MANTISSA = 1e6;
-
-    constructor() {
-        owner = msg.sender;
+    constructor() Ownable() {
     }
 
-    modifier onlyOwner() {
-        require(msg.sender == owner);
-        _;
-    }
 
     modifier onlyMarket() {
-        require(markets[msg.sender]);
+        require(_markets.include(msg.sender), "Controller::_: only market can call it");
         _;
     }
-
-    function marketListSize() public view returns (uint) {
-      return marketList.length;
-    }
-
-    function setCollateralFactor(uint factor) public onlyOwner {
-        collateralFactor = factor;
-    }
-
-    function setLiquidationFactor(uint factor) public onlyOwner {
-        liquidationFactor = factor;
-    }
-
-    function setPrice(address market, uint price) public onlyOwner {
-        require(markets[market]);
-
-        prices[market] = price;
-    }
-
-    function addMarket(address market) public onlyOwner {
-        address marketToken = IMarket(market).getToken();
-        require(marketsByToken[marketToken] == address(0));
-        markets[market] = true;
-        marketsByToken[marketToken] = market;
-        marketList.push(market);
-    }
-
-    function getAccountLiquidity(address account) public view returns (uint) {
-        uint liquidity = 0;
-
-        uint supplyValue;
-        uint borrowValue;
-
-        (supplyValue, borrowValue) = getAccountValues(account);
-
-        borrowValue = borrowValue.mul(collateralFactor.add(MANTISSA));
-        borrowValue = borrowValue.div(MANTISSA);
-
-        if (borrowValue < supplyValue)
-            liquidity = supplyValue.sub(borrowValue);
-
-        return liquidity;
-    }
-
-    function getAccountHealth(address account) public view returns (uint) {
-        uint supplyValue;
-        uint borrowValue;
-
-        (supplyValue, borrowValue) = getAccountValues(account);
-
-        return calculateHealthIndex(supplyValue, borrowValue);
+    
+    
+    function collateralFactor() external view override returns (uint) {
+        return _collateralFactor;
     }
     
-    function calculateHealthIndex(uint supplyValue, uint borrowValue) internal view returns (uint) {
-        if (supplyValue == 0 || borrowValue == 0)
-            return 0;
-
-        borrowValue = borrowValue.mul(liquidationFactor.add(MANTISSA));
-        borrowValue = borrowValue.div(MANTISSA);
-        
-        return supplyValue.mul(MANTISSA).div(borrowValue);
+    function setCollateralFactor(uint factor) external override onlyOwner {
+        _collateralFactor = factor;
     }
 
-    function getAccountValues(address account) public view returns (uint supplyValue, uint borrowValue) {
-        for (uint k = 0; k < marketList.length; k++) {
-            IMarket market = IMarket(marketList[k]);
-            uint price = prices[marketList[k]];
-            
-            supplyValue = supplyValue.add(market.updatedSupplyOf(account).mul(price));
-            borrowValue = borrowValue.add(market.updatedBorrowBy(account).mul(price));
-        }
+    function liquidationFactor() external view override returns (uint) {
+        return _liquidationFactor;
     }
     
-    function liquidateCollateral(address borrower, address liquidator, uint amount, IMarket collateralMarket) public onlyMarket returns (uint collateralAmount)  {
-        uint price = prices[msg.sender];        
-        require(price > 0);
+    function setLiquidationFactor(uint factor) external override onlyOwner {
+        _liquidationFactor = factor;
+    }
+    
 
-        uint collateralPrice = prices[address(collateralMarket)];        
-        require(collateralPrice > 0);
+    function addMarket(address market) external override onlyOwner {
+        address token = IMarket(market).token();
         
-        uint supplyValue;
-        uint borrowValue;
-
-        (supplyValue, borrowValue) = getAccountValues(borrower);
-        require(borrowValue > 0);
+        require(_tokenToMarket[token] == address(0));
         
-        uint healthIndex = calculateHealthIndex(supplyValue, borrowValue);
+        _tokenToMarket[token] = market;
+        _markets.push(market);
+    }
+    
+    function removeMarket(address market_) external override onlyOwner returns (bool status) {
+        IMarket market = IMarket(market_);
         
-        require(healthIndex <= MANTISSA);
+        require(market.balance() == 0);
+        require(market.totalSupply() == 0);
+        require(market.totalBorrow() == 0);
         
-        uint liquidationValue = amount.mul(price);
-        uint liquidationPercentage = liquidationValue.mul(MANTISSA).div(borrowValue);
-        uint collateralValue = supplyValue.mul(liquidationPercentage).div(MANTISSA);
+        address token = market.token();
         
-        collateralAmount = collateralValue.div(collateralPrice);
+        require(_tokenToMarket[token] != address(0));
         
-        collateralMarket.transferTo(borrower, liquidator, collateralAmount);
+        
+        delete _tokenToMarket[token];
+        _markets.removeByValue(market_);
+        
+        return true;
+    }
+    
+    function size() external view override returns (uint) {
+      return _markets.length;
+    }
+    
+    function marketOf(address token) external view override returns (address) {
+        return _tokenToMarket[token];
+    }
+    
+    function include(address market_) external view override returns (bool included) {
+        return _markets.include(market_);
     }
 }
-
