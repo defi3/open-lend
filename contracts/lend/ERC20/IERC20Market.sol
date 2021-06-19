@@ -16,6 +16,8 @@
  * 
  *  Main Update 3, 2021-06-17, migrate to ^0.8.0
  * 
+ *  Main Update 4, 2021-06-18, add setPrice() and price()
+ * 
  */
 pragma solidity ^0.8.0;
 
@@ -28,6 +30,9 @@ interface IERC20Market is IMarket {
     event PayBorrow(address user, uint amount);
     
     event LiquidateBorrow(address borrower, uint amount, address liquidator, address collateral, uint collateralAmount);
+    
+    function setPrice(uint256 price_) external;
+    function price() external view returns (uint256);
     
     function supplyOf(address account) external view returns (uint);
     function borrowBy(address account) external view returns (uint);

@@ -28,6 +28,8 @@
  * 
  *  Main Update 9, 2021-06-17, migrate to ^0.8.0
  * 
+ *  Main Update 10, 2021-06-18, add _price, setPrice() and price()
+ * 
  */
 pragma solidity ^0.8.0;
 
@@ -37,11 +39,21 @@ import "../../token/ERC20/IERC20.sol";
 import "../../utils/Extremal.sol";
 
 abstract contract ERC20Market is Market, IERC20Market, Extremal {
+    uint256 internal _price;
     
     constructor(address token_, uint256 min_, uint256 max_) Market(token_) Extremal(min_, max_) {
     }
 
 
+    function setPrice(uint256 price_) external override onlyOwner {
+        _price = price_;
+    }
+    
+    function price() external view override returns (uint256) {
+        return _price;
+    }
+    
+    
     function balance() public view override returns (uint) {
         return IERC20(_token).balanceOf(address(this));
     }

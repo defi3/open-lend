@@ -18,6 +18,8 @@
  * 
  *  Main Update 5, 2021-06-17, migrate to ^0.8.0
  * 
+ *  Main Update 6, 2021-06-18, move price to ERC20Market
+ * 
  */
 pragma solidity ^0.8.0;
 
@@ -30,21 +32,8 @@ abstract contract ERC20Controller is Controller, IERC20Controller {
     
     uint public constant MANTISSA = 1e6;
 
-    mapping (address => uint) internal _prices;
-
 
     constructor() Controller() {
-    }
-    
-
-    function setPrice(address market, uint price) external override onlyOwner {
-        require(_markets.include(market), "ERC20Controller::setPrice: market is not added");
-
-        _prices[market] = price;
-    }
-    
-    function priceOf(address market) external view override returns (uint) {
-        return _prices[market];
     }
     
     
@@ -60,7 +49,7 @@ abstract contract ERC20Controller is Controller, IERC20Controller {
     function accountLiquidity(address account, address market, uint amount) external view override returns (bool status, uint liquidity_) {
         uint liquidity = _accountLiquidity(account);
         
-        return (liquidity >= _prices[market] * amount * 2, liquidity);
+        return (liquidity >= ERC20Market(market).price() * amount * 2, liquidity);
     }
     
     function _accountLiquidity(address account) internal view returns (uint) {
@@ -102,10 +91,10 @@ abstract contract ERC20Controller is Controller, IERC20Controller {
     
     
     function liquidateCollateral(address borrower, address liquidator, uint amount, address collateral) external override onlyMarket returns (uint collateralAmount)  {
-        uint price = _prices[msg.sender];        
+        uint price = ERC20Market(msg.sender).price();        
         require(price > 0);
 
-        uint collateralPrice = _prices[collateral];        
+        uint collateralPrice = ERC20Market(collateral).price();     
         require(collateralPrice > 0);
         
         uint supplyValue;
@@ -124,8 +113,7 @@ abstract contract ERC20Controller is Controller, IERC20Controller {
         
         collateralAmount = collateralValue / collateralPrice;
         
-        ERC20Market collateralMarket = ERC20Market(collateral);
-        collateralMarket.redeemFor(borrower, liquidator, collateralAmount);
+        ERC20Market(collateral).redeemFor(borrower, liquidator, collateralAmount);
     }
 }
 

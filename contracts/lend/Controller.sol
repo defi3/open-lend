@@ -26,7 +26,7 @@
 pragma solidity ^0.8.0;
 
 import "./IController.sol";
-import "./IMarket.sol";
+import "./Market.sol";
 import "../utils/Ownable.sol";
 import "../utils/AddressArray.sol";
 
@@ -39,7 +39,7 @@ abstract contract Controller is IController, Ownable {
     uint internal _liquidationFactor;
 
     mapping (address => address) internal _tokenToMarket;
-    address[] internal _markets;
+    address[] internal _markets = new address[](0);
 
 
     constructor() Ownable() {
@@ -69,17 +69,23 @@ abstract contract Controller is IController, Ownable {
     }
     
 
-    function addMarket(address market) external override onlyOwner {
-        address token = IMarket(market).token();
+    function addMarket(address market_) external override onlyOwner {
+        Market market = Market(market_);
+        
+        require(market.owner() == msg.sender, "Controller::addMarket: add only markets created by msg.sender");
+        
+        address token = market.token();
         
         require(_tokenToMarket[token] == address(0));
         
-        _tokenToMarket[token] = market;
-        _markets.push(market);
+        _tokenToMarket[token] = market_;
+        _markets.push(market_);
     }
     
     function removeMarket(address market_) external override onlyOwner returns (bool status) {
-        IMarket market = IMarket(market_);
+        Market market = Market(market_);
+        
+        require(market.owner() == msg.sender, "Controller::removeMarket: remove only markets created by msg.sender");
         
         require(market.balance() == 0);
         require(market.totalSupply() == 0);
