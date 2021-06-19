@@ -54,7 +54,7 @@ contract SimpleERC20Market is ERC20Market {
 
         _supplies[supplier] -= amount;
         
-        ERC20Controller ctr = ERC20Controller(_controller);
+        ERC20Controller ctr = ERC20Controller(controller());
         
         bool status;
         uint health;
@@ -65,7 +65,7 @@ contract SimpleERC20Market is ERC20Market {
     }
 
     function _borrow(address borrower, uint amount) internal override {
-        ERC20Controller ctr = ERC20Controller(_controller); 
+        ERC20Controller ctr = ERC20Controller(controller()); 
         
         bool status;
         uint liquidity;
@@ -101,7 +101,7 @@ contract SimpleERC20Market is ERC20Market {
         
         require(IERC20(_token).balanceOf(msg.sender) >= amount);
         
-        ERC20Controller ctr = ERC20Controller(_controller);
+        ERC20Controller ctr = ERC20Controller(controller());
         uint collateralAmount = ctr.liquidateCollateral(borrower, msg.sender, amount, collateral);
 
         uint paid;

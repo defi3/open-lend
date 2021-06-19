@@ -27,7 +27,7 @@
 pragma solidity ^0.8.0;
 
 import "./IMarket.sol";
-import "../utils/Controllable.sol";
+import "../access/Controllable.sol";
 
 abstract contract Market is IMarket, Controllable {
     address internal _token;

@@ -166,7 +166,7 @@ contract ERC20MarketFloating is ERC20Market, IMarketFloating {
 
         supplySnapshot.supply -= amount;
         
-        ERC20Controller ctr = ERC20Controller(_controller);
+        ERC20Controller ctr = ERC20Controller(controller());
         
         bool status;
         uint value;
@@ -188,7 +188,7 @@ contract ERC20MarketFloating is ERC20Market, IMarketFloating {
             borrowSnapshot.interestIndex = _borrowIndex;
         }
         
-        ERC20Controller ctr = ERC20Controller(_controller);
+        ERC20Controller ctr = ERC20Controller(controller());
         
         bool status;
         uint value;
@@ -307,7 +307,7 @@ contract ERC20MarketFloating is ERC20Market, IMarketFloating {
         
         require(IERC20(_token).balanceOf(msg.sender) >= amount);
         
-        ERC20Controller ctr = ERC20Controller(_controller);
+        ERC20Controller ctr = ERC20Controller(controller());
         uint collateralAmount = ctr.liquidateCollateral(borrower, msg.sender, amount, collateral);
 
         uint paid;

@@ -27,7 +27,7 @@ pragma solidity ^0.8.0;
 
 import "./IController.sol";
 import "./Market.sol";
-import "../utils/Ownable.sol";
+import "../access/Ownable.sol";
 import "../utils/AddressArray.sol";
 
 abstract contract Controller is IController, Ownable {
